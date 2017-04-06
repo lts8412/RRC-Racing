@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>RRC - Racing</title>
+	
+	<!-- This Needs To Be Replaced With three.js -->
+	<script type="text/javascript" src="js/three.min.js"></script>
+	
+	<!--Remove before submission -->
+	<script type="text/javascript" src="js/stats.js"></script>
+	<script type="text/javascript" src="js/THREEx.DeviceOrientationState.js"></script>
+	<script type="text/javascript" src="../physi.js"></script>
+	<script type="text/javascript" src="js/Off.js"></script>				<!--Javascript To Calibrate Or Shut Down Orientation Controls-->
+	<script type="text/javascript" src="js/listen.js"></script>				<!--Event Listeners-->
+	<script type="text/javascript" src="js/NotMine.js"></script>			<!--Code that I started with and did not change-->
+	<script type="text/javascript" src="js/RRC-Objects.js"></script>		<!--Javascript File Containing Scene Objects-->
+	<style>
+        body {
+            /* set margin to 0 and overflow to hidden, to go fullscreen */
+            margin: 0;
+			padding: 0;
+            overflow: hidden;
+            background-color: #000000;
+        }
+	</style>
+</head>
+<body>
+<div id="MarklarOutput"></div>																			<!-- Div Which Will Hold The Stats Output -->
+<div style = 'position: absolute; top: 10px; right: 10px;' id="Orientation"><input type="button" class= "m1" value="Disable Tilt Controls" id="marklar" onclick="displayColor()"></div> <!--Div That Holds A Button-->
+<script type="text/javascript">																			<!-- Javascript Code That Runs The Three.js -->
+    var MarklarRenderer = new THREE.WebGLRenderer();													// create a renderer - GLOBAL
+	var ground_material, OrientationOn = true;															//GLOBAL variables required for external files to operate
+	function init() {																					// Once Everything Is Loaded, We Run Our Three.js Stuff
+		MarklarRenderer.setSize( window.innerWidth, window.innerHeight );								// Set The Size Of The Renderer
+		document.getElementById( 'MarklarOutput' ).appendChild( MarklarRenderer.domElement );			// add the output of the renderer to the html element
+		var device = new THREEx.DeviceOrientationState();
+		
+		var ground, vehicle, loader, input;			//NOT MY CODE
+		
+		scene.addEventListener('update', 
+			function() {
+				if ( input && vehicle ) {
+					if ( input.direction !== null ) {
+						input.steering += input.direction / 50;
+						if ( input.steering < -.6 ) input.steering = -.6;
+						if ( input.steering > .6 ) input.steering = .6;
+					}
+					vehicle.setSteering( input.steering, 0 );
+					vehicle.setSteering( input.steering, 1 );
+					if ( input.power === true ) {
+						if ( input.forward === true ) {
+							vehicle.applyEngineForce( 300 );
+						}
+						if ( input.forward === false ) {			//Enter If The Car Should Be Moving In Reverse
+							vehicle.applyEngineForce( -300 );		//Apply Reverse Engine Force
+						}											//End Of Reverse Functionality
+					} else if ( input.power === false ) {
+						vehicle.setBrake( 20, 2 );
+						vehicle.setBrake( 20, 3 );
+					} else {
+						vehicle.applyEngineForce( 0 );
+					}
+				}
+				scene.simulate( undefined, 2 );
+			}
+		);
+		
+		//Add Objects To The Scene
+		scene.add(a);
+		scene.add(b);
+		scene.add(c);
+		//End of Adding Objects To The Scene
+		
+		// Loader
+		loader = new THREE.TextureLoader();
+		// Materials
+		ground_material = Physijs.createMaterial(new THREE.MeshLambertMaterial({ map: loader.load( 'images/track.jpg' ) }), .8, // high friction
+			.05 // low restitution
+		);
+		ground_material.map.wrapS = ground_material.map.wrapT = THREE.RepeatWrapping;
+		ground_material.map.repeat.set( 3, 3 );
+		
+		//Make the Track
+		function createMesh(geom) {
+
+            // assign two materials
+            var meshMaterial = new THREE.MeshNormalMaterial();
+            meshMaterial.side = THREE.DoubleSide;
+            var wireFrameMat = new THREE.MeshBasicMaterial();
+            wireFrameMat.wireframe = true;
+
+            // create a multimaterial
+            var mesh = THREE.SceneUtils.createMultiMaterialObject(geom, [meshMaterial, wireFrameMat]);
+
+            return mesh;
+        }
+
+		/* - Make & Add The Track - */
+		track(60,300,100,100, 0, 0, 0);
+		track(60,300,100,100, -175, 0, 0);
+		/* - End Of The Track Creation - */
+		
+		// Ground
+		//var ground_geometry = new THREE.RingGeometry(200, 250);
+		// If your plane is not square as far as face count then the HeightfieldMesh
+		// takes two more arguments at the end: # of x faces and # of z faces that were passed to THREE.PlaneMaterial
+		//ground = new Physijs.HeightfieldMesh(
+		//		ground_geometry,
+		//		ground_material,
+		//		0 // mass
+		//);
+		//ground.rotation.x = -Math.PI / 2;
+		//ground.receiveShadow = true;
+		//scene.add( ground );
+		
+		var json_loader = new THREE.JSONLoader();													//NOT MY CODE
+		json_loader.load( "models/mustang.js", function( car, car_materials ) {						//NOT MY CODE
+			json_loader.load( "models/wheel.js", function( wheel, wheel_materials ) {		//NOT MY CODE
+				var mesh = new Physijs.BoxMesh(														//NOT MY CODE
+					car,																			//NOT MY CODE
+					new THREE.MeshFaceMaterial( car_materials )										//NOT MY CODE
+				);																					//NOT MY CODE
+				mesh.position.y = 2;																//NOT MY CODE
+				mesh.castShadow = mesh.receiveShadow = true;										//NOT MY CODE
+				vehicle = new Physijs.Vehicle(mesh, new Physijs.VehicleTuning(10.88, 1.83, 0.28, 500, 10.5, 6000));					//NOT MY CODE
+				scene.add( vehicle );																//NOT MY CODE
+				var wheel_material = new THREE.MeshFaceMaterial( wheel_materials );					//NOT MY CODE
+				for ( var i = 0; i < 4; i++ ) {														//NOT MY CODE
+					vehicle.addWheel(wheel, wheel_material, new THREE.Vector3(i % 2 === 0 ? -1.6 : 1.6, -1, i < 2 ? 3.3 : -3.2),	//NOT MY CODE
+						new THREE.Vector3( 0, -1, 0 ),												//NOT MY CODE
+						new THREE.Vector3( -1, 0, 0 ),												//NOT MY CODE
+						0.5,																		//NOT MY CODE
+						0.7,																		//NOT MY CODE
+						i < 2 ? false : true														//NOT MY CODE
+					);																				//NOT MY CODE
+				}																					//NOT MY CODE
+				input = {																			//NOT MY CODE
+					power: null,																	//NOT MY CODE
+					direction: null,																//NOT MY CODE
+					steering: 0																		//NOT MY CODE
+				};																					//NOT MY CODE
+				document.addEventListener('keydown', function( ev ) {								//NOT MY CODE
+					switch ( ev.keyCode ) {															//NOT MY CODE
+						case 32: //Space
+							OrientationOn++;
+							break;
+						case 37: // left															//NOT MY CODE
+							input.direction = 1;													//NOT MY CODE
+							break;																	//NOT MY CODE
+						case 38: // forward															//NOT MY CODE
+							input.forward = true;								//Added to add the ability to drive in reverse
+							input.power = true;														//NOT MY CODE	
+							break;																	//NOT MY CODE
+						case 39: // right															//NOT MY CODE
+							input.direction = -1;													//NOT MY CODE
+							break;																	//NOT MY CODE
+						case 40: // back															//NOT MY CODE
+							input.forward = false;								//Added to add the ability to drive in reverse
+							input.power = true;									//Added to add the ability to drive in reverse 
+							break;																	//NOT MY CODE
+					}																				//NOT MY CODE
+				});																					//NOT MY CODE
+				document.addEventListener('deviceorientation',  callback, false);
+				console.log('Angle Y is:' + device.angleY());
+				console.log('Angle X is:' + device.angleX());
+				console.log('Angle Z is:' + device.angleZ());
+				
+				
+				
+				document.addEventListener('keyup', function( ev ) {									//NOT MY CODE
+					switch ( ev.keyCode ) {															//NOT MY CODE
+						case 37: // left															//NOT MY CODE
+							input.direction = null;													//NOT MY CODE
+							break;																	//NOT MY CODE
+						case 38: // forward															//NOT MY CODE
+							input.power = null;														//NOT MY CODE
+							break;																	//NOT MY CODE
+						case 39: // right															//NOT MY CODE
+							input.direction = null;													//NOT MY CODE
+							break;																	//NOT MY CODE
+						case 40: // back															//NOT MY CODE
+							input.power = null;														//NOT MY CODE
+							break;																	//NOT MY CODE
+					}																				//NOT MY CODE
+				});																					//NOT MY CODE
+			});																						//NOT MY CODE
+		});																							//NOT MY CODE
+		requestAnimationFrame( render );															//NOT MY CODE
+		scene.simulate();																			//NOT MY CODE
+		function callback(event){
+			console.log("orientation gamma:", event.gamma, "beta", event.beta, "alpha", event.alpha);
+		}
+		
+		//REMOVE BEFORE SUBMISSION
+		var render_stats = new Stats();render_stats.domElement.style.position = 'absolute';render_stats.domElement.style.top = '1px';render_stats.domElement.style.zIndex = 100;document.getElementById( 'MarklarOutput' ).appendChild( render_stats.domElement );
+		//REMOVE BEFORE SUBMISSION
+		
+		function render() {																			
+			requestAnimationFrame( render );														//NOT MY CODE
+			if(OrientationOn){
+				if(device.angleY() < 0){
+					input.direction = 1;
+				}if(device.angleY() > 0){
+					input.direction = -1;
+				}if(device.angleZ() < 0){
+					input.forward = true;
+					input.power = true;
+				}if(device.angleZ() > 0){
+					input.forward = false;
+					input.power = true;
+				}
+			}
+			if ( vehicle ) {																		//NOT MY CODE
+				c.position.copy(vehicle.mesh.position).add( new THREE.Vector3(40,25,40));			//NOT MY CODE
+				c.lookAt( vehicle.mesh.position );													//NOT MY CODE
+			}																						//NOT MY CODE
+			MarklarRenderer.render( scene, c );														//NOT MY CODE
+			//Remove before subission
+			render_stats.update();																	//NOT MY CODE
+		}
+	}
+	window.onload = init;																		//Call The Main Function Once The Page Is Loaded 
+</script>
+</body>	
+</html>
