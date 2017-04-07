@@ -12,6 +12,6 @@ function track(sizeX, sizeY, segmentsX, segmentsY, positionX, positionY, positio
 	ground.position.y = positionY;
 	ground.position.z = positionZ;
 	ground.rotation.x = 4.71239;//No need to change
-	ground.rotation.y = 1.5708;//4.71239;
+	ground.rotation.y = 4.71239; //Will Need to be changed to create the banking of the track
 	scene.add( ground );
 }
