@@ -13,6 +13,6 @@ function track(sizeX, sizeY, segmentsX, segmentsY, positionX, positionY, positio
 	ground.position.z = positionZ;
 	ground.rotation.x = 4.71239;//No need to change
 	ground.rotation.y = 0;//Will Need to be changed to create the banking of the track
-	ground.rotation.z = 1.5708;
+	ground.rotation.z = 0;//1.5708;//Will Need For The Curve
 	scene.add( ground );
 }
