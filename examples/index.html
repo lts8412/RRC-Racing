@@ -26,10 +26,10 @@
 </head>
 <body>
 <div id="MarklarOutput"></div>																			<!-- Div Which Will Hold The Stats Output -->
-<div style = 'position: absolute; top: 10px; right: 10px;' id="Orientation"><input type="button" class= "m1" value="Disable Tilt Controls" id="marklar" onclick="displayColor()"></div> <!--Div That Holds A Button-->
+<div style = 'position: absolute; top: 10px; right: 10px;' id="Orientation"><input type="button" class= "m1" value="Enable Tilt Controls" id="marklar" onclick="displayColor()"></div> <!--Div That Holds A Button-->
 <script type="text/javascript">																			<!-- Javascript Code That Runs The Three.js -->
     var MarklarRenderer = new THREE.WebGLRenderer();													// create a renderer - GLOBAL
-	var ground_material, OrientationOn = true;															//GLOBAL variables required for external files to operate
+	var ground_material, OrientationOn = false;															//GLOBAL variables required for external files to operate
 	function init() {																					// Once Everything Is Loaded, We Run Our Three.js Stuff
 		MarklarRenderer.setSize( window.innerWidth, window.innerHeight );								// Set The Size Of The Renderer
 		document.getElementById( 'MarklarOutput' ).appendChild( MarklarRenderer.domElement );			// add the output of the renderer to the html element
@@ -99,20 +99,7 @@
 		track(60,300,100,100, 0, 0, 0);
 		track(60,300,100,100, -175, 0, 0);
 		/* - End Of The Track Creation - */
-		
-		// Ground
-		//var ground_geometry = new THREE.RingGeometry(200, 250);
-		// If your plane is not square as far as face count then the HeightfieldMesh
-		// takes two more arguments at the end: # of x faces and # of z faces that were passed to THREE.PlaneMaterial
-		//ground = new Physijs.HeightfieldMesh(
-		//		ground_geometry,
-		//		ground_material,
-		//		0 // mass
-		//);
-		//ground.rotation.x = -Math.PI / 2;
-		//ground.receiveShadow = true;
-		//scene.add( ground );
-		
+
 		var json_loader = new THREE.JSONLoader();													//NOT MY CODE
 		json_loader.load( "models/mustang.js", function( car, car_materials ) {						//NOT MY CODE
 			json_loader.load( "models/wheel.js", function( wheel, wheel_materials ) {		//NOT MY CODE
