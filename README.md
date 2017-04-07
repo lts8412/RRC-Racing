@@ -1,2 +1,0 @@
-# RRC-Racing
-three.js
