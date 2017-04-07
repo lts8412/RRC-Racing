@@ -11,5 +11,6 @@ function track(sizeX, sizeY, segmentsX, segmentsY, positionX, positionY, positio
 	ground.position.x = positionX;
 	ground.position.y = positionY;
 	ground.position.z = positionZ;
+	ground.rotation.x = 0;
 	scene.add( ground );
 }
