@@ -2,19 +2,15 @@
 <html>
 <head>
 	<title>RRC - Racing</title>
-	
-	<!-- This Needs To Be Replaced With three.js -->
-	<!-- <script type="text/javascript" src="js/three.min.js"></script> -->
-	<script type="text/javascript" src="js/three.js"></script>
-	
-	<!--Remove before submission -->
-	<script type="text/javascript" src="js/stats.js"></script>
+	<script type="text/javascript" src="js/three.min.js"></script> 	<!--Min To Keep Mobile Browsers From Crashing-->
+	<script type="text/javascript" src="js/stats.js"></script>		<!--Remove before submission -->
 	<script type="text/javascript" src="js/THREEx.DeviceOrientationState.js"></script>
-	<script type="text/javascript" src="../physi.js"></script>
-	<script type="text/javascript" src="js/Off.js"></script>				<!--Javascript To Calibrate Or Shut Down Orientation Controls-->
-	<script type="text/javascript" src="js/listen.js"></script>				<!--Event Listeners-->
-	<script type="text/javascript" src="js/NotMine.js"></script>			<!--Code that I started with and did not change-->
-	<script type="text/javascript" src="js/RRC-Objects.js"></script>		<!--Javascript File Containing Scene Objects-->
+	<script type="text/javascript" src="../physi.js"></script>		<!--Physics Engine-->
+	<script type="text/javascript" src="js/Off.js"></script>		<!--Javascript To Calibrate Or Shut Down Orientation Controls-->
+	<script type="text/javascript" src="js/listen.js"></script>		<!--Event Listeners-->
+	<script type="text/javascript" src="js/NotMine.js"></script>	<!--Code that I started with and did not change-->
+	<script type="text/javascript" src="js/RRC-Objects.js"></script><!--Javascript File Containing Scene Objects-->
+	<script type="text/javascript" src="js/ComputerCar.js"></script>
 	<style>
         body {
             /* set margin to 0 and overflow to hidden, to go fullscreen */
@@ -26,18 +22,21 @@
 	</style>
 </head>
 <body>
-<div id="MarklarOutput"></div>																			<!-- Div Which Will Hold The Stats Output -->
+<div id="MarklarOutput"></div>																	<!-- Div Which Will Hold The Stats Output -->
 <div style = 'position: absolute; top: 10px; right: 10px;' id="Orientation"><input type="button" class= "m1" value="Enable Tilt Controls" id="marklar" onclick="displayColor()"></div> <!--Div That Holds A Button-->
-<script type="text/javascript">																			<!-- Javascript Code That Runs The Three.js -->
+<script type="text/javascript">																	<!-- Javascript Code That Runs The Three.js -->
     var MarklarRenderer = new THREE.WebGLRenderer();													// create a renderer - GLOBAL
-	var ground_material, OrientationOn = false;															//GLOBAL variables required for external files to operate
+	var ground_material, AI1, AI1input, AI2, AI2input,  vehicle, OrientationOn = false;															//GLOBAL variables required for external files to operate
+	var AIX = 0;
+
 	function init() {																					// Once Everything Is Loaded, We Run Our Three.js Stuff
 		MarklarRenderer.setSize( window.innerWidth, window.innerHeight );								// Set The Size Of The Renderer
 		document.getElementById( 'MarklarOutput' ).appendChild( MarklarRenderer.domElement );			// add the output of the renderer to the html element
 		var device = new THREEx.DeviceOrientationState();
-		
-		var ground, vehicle, loader, input;			//NOT MY CODE
-		
+		var RRC = 0, rr = 0;
+		var ground, loader, input;
+		createComputerCar();
+		createComputerCar2();
 		scene.addEventListener('update', 
 			function() {
 				if ( input && vehicle ) {
@@ -65,7 +64,59 @@
 				scene.simulate( undefined, 2 );
 			}
 		);
-		
+		scene.addEventListener('update', 
+			function() {
+				if ( AI1input && AI1 ) {
+					if ( AI1input.direction !== null ) {
+						AI1input.steering += input.direction / 50;
+						if ( AI1input.steering < -.6 ) AI1input.steering = -.6;
+						if ( AI1input.steering > .6 ) AI1input.steering = .6;
+					}
+					AI1.setSteering( AI1input.steering, 0 );
+					AI1.setSteering( AI1input.steering, 1 );
+					if ( AI1input.power === true ) {
+						if ( AI1input.forward === true ) {
+							AI1.applyEngineForce( 300 );
+						}
+						if ( AI1input.forward === false ) {			//Enter If The Car Should Be Moving In Reverse
+							AI1.applyEngineForce( -300 );		//Apply Reverse Engine Force
+						}											//End Of Reverse Functionality
+					} else if ( AI1input.power === false ) {
+						AI1.setBrake( 20, 2 );
+						AI1.setBrake( 20, 3 );
+					} else {
+						AI1.applyEngineForce( 0 );
+					}
+				}
+				scene.simulate( undefined, 2 );
+			});
+		scene.addEventListener('update', 
+			function() {
+				if ( AI2input && AI2 ) {
+					if ( AI2input.direction !== null ) {
+						AI2input.steering += input.direction / 50;
+						if ( AI2input.steering < -.6 ) AI2input.steering = -.6;
+						if ( AI2input.steering > .6 ) AI2input.steering = .6;
+					}
+					AI2.setSteering( AI2input.steering, 0 );
+					AI2.setSteering( AI2input.steering, 1 );
+					if ( AI2input.power === true ) {
+						if ( AI2input.forward === true ) {
+							AI2.applyEngineForce( 300 );
+						}
+						if ( AI2input.forward === false ) {			//Enter If The Car Should Be Moving In Reverse
+							AI2.applyEngineForce( -300 );		//Apply Reverse Engine Force
+						}											//End Of Reverse Functionality
+					} else if ( AI2input.power === false ) {
+						AI2.setBrake( 20, 2 );
+						AI2.setBrake( 20, 3 );
+					} else {
+						AI2.applyEngineForce( 0 );
+					}
+				}
+				scene.simulate( undefined, 2 );
+			});
+
 		//Add Objects To The Scene
 		scene.add(a);
 		scene.add(b);
@@ -97,34 +148,14 @@
         }
 
 		/* - Make & Add The Track - */
-		track(60,300,100,100, 0, 0, 0);
-		track(60,300,100,100, -175, 0, 0);
-		track(60,5,100,100,-0.5,0,151);
-		track(60,5,100,100,-1,0,152);
-		track(60,5,100,100,-1.5,0,153);
-		track(60,5,100,100,-2,0,154);
-		track(60,5,100,100,-2.5,0,155);
-		track(60,5,100,100,-3,0,156);
-		track(60,5,100,100,-3.5,0,157);
-		track(60,5,100,100,-4,0,158);
-		track(60,5,100,100,-4.5,0,159);
-		track(60,5,100,100,-5,0,160);
-		track(60,5,100,100,-5.5,0,161);
-		track(60,5,100,100,-6,0,162);
-		track(60,5,100,100,-6.5,0,163);
-		track(60,5,100,100,-7,0,164);
-		track(60,5,100,100,-7.5,0,165);
-		track(60,5,100,100,-8,0,166);
-		track(60,5,100,100,-8.5,0,167);
-		track(60,5,100,100,-9,0,168);
-		track(60,5,100,100,-9.5,0,169);
-		track(60,5,100,100,-10,0,170);
-		track(60,5,100,100,-10.5,0,171);
-		track(60,5,100,100,-11,0,172);
-		track(60,5,100,100,-11.5,0,173);
-		track(60,5,100,100,-12,0,174);
+		track(60,300,100,100, 0, 0, 0, 0);
+		track(60,300,100,100, -300, 0, 0, 0);
+		track(60,240,100,100, -150, 0, 120, 1.5708);
+		track(60,240,100,100, -150, 0, -120, 1.5708);
+		createCar();
+		//createCar();
 		/* - End Of The Track Creation - */
-
+		function createCar(){
 		var json_loader = new THREE.JSONLoader();													//NOT MY CODE
 		json_loader.load( "models/mustang.js", function( car, car_materials ) {						//NOT MY CODE
 			json_loader.load( "models/wheel.js", function( wheel, wheel_materials ) {		//NOT MY CODE
@@ -173,8 +204,8 @@
 				console.log('Angle Y is:' + device.angleY());
 				console.log('Angle X is:' + device.angleX());
 				console.log('Angle Z is:' + device.angleZ());
-				
-				
+				console.log(RRC);
+		
 				
 				document.addEventListener('keyup', function( ev ) {									//NOT MY CODE
 					switch ( ev.keyCode ) {															//NOT MY CODE
@@ -194,6 +225,9 @@
 				});																					//NOT MY CODE
 			});																						//NOT MY CODE
 		});																							//NOT MY CODE
+		//RRC++;
+		console.log(RRC);
+		}
 		requestAnimationFrame( render );															//NOT MY CODE
 		scene.simulate();																			//NOT MY CODE
 		function callback(event){
@@ -203,9 +237,18 @@
 		//REMOVE BEFORE SUBMISSION
 		var render_stats = new Stats();render_stats.domElement.style.position = 'absolute';render_stats.domElement.style.top = '1px';render_stats.domElement.style.zIndex = 100;document.getElementById( 'MarklarOutput' ).appendChild( render_stats.domElement );
 		//REMOVE BEFORE SUBMISSION
-		
-		function render() {																			
+		function render() {		
+			rr++;
 			requestAnimationFrame( render );														//NOT MY CODE
+			//input[RRC].direction = 1;
+			//input[0].forward = true;
+			//input[0].power = true;
+			//if(rr > 100){
+			//AI1input.forward=true;AI1input.power=true;//
+			//AI2input.forward=false;AI2input.power=true;
+			AI1.applyEngineForce( 30 );
+			//console.log("Computer is Moving");
+			///}
 			if(OrientationOn){
 				if(device.angleY() < 0){
 					input.direction = 1;
