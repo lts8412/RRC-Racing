@@ -5,4 +5,3 @@
 /*2*/	Physijs.scripts.ammo = 'examples/js/ammo.js';						//NOT MY CODE - javascript file required for the scene to work
 /*3*/	var scene = new Physijs.Scene();									//NOT MY CODE - create a scene, to hold all our elements such as objects, cameras and lights.
 /*4*/	scene.setGravity(new THREE.Vector3( 0, -30, 0 ));					//NOT MY CODE - Set The Force And Direction Of Gravity In The Scene
-/*5*/			
