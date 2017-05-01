@@ -1,59 +1,51 @@
+<!--Main page Of the Racing Game-->
 <!DOCTYPE html>
 <html>
 <head>
 	<title>RRC - Racing</title>
-	
-	<!-- This Needs To Be Replaced With three.js -->
-	<!-- <script type="text/javascript" src="js/three.min.js"></script> -->
-	<script type="text/javascript" src="js/three.js"></script>
-	
-	<!--Remove before submission -->
-	<script type="text/javascript" src="js/stats.js"></script>
+	<script type="text/javascript" src="js/three.min.js"></script> 	<!--Min To Keep Mobile Browsers From Crashing-->
+	<script type="text/javascript" src="js/stats.js"></script>		<!--Remove before submission -->
 	<script type="text/javascript" src="js/THREEx.DeviceOrientationState.js"></script>
-	<script type="text/javascript" src="../physi.js"></script>
-	<script type="text/javascript" src="js/Off.js"></script>				<!--Javascript To Calibrate Or Shut Down Orientation Controls-->
-	<script type="text/javascript" src="js/listen.js"></script>				<!--Event Listeners-->
-	<script type="text/javascript" src="js/NotMine.js"></script>			<!--Code that I started with and did not change-->
-	<script type="text/javascript" src="js/RRC-Objects.js"></script>		<!--Javascript File Containing Scene Objects-->
-	<style>
-        body {
-            /* set margin to 0 and overflow to hidden, to go fullscreen */
-            margin: 0;
-			padding: 0;
-            overflow: hidden;
-            background-color: #000000;
-        }
-	</style>
+	<script type="text/javascript" src="../physi.js"></script>		<!--Physics Engine-->
+	<script type="text/javascript" src="js/Off.js"></script>		<!--Javascript To Calibrate Or Shut Down Orientation Controls-->
+	<script type="text/javascript" src="js/listen.js"></script>		<!--Event Listeners-->
+	<script type="text/javascript" src="js/NotMine.js"></script>	<!--Code that I started with and did not change-->
+	<script type="text/javascript" src="js/RRC-Objects.js"></script><!--Javascript File Containing Scene Objects-->
+	<script type="text/javascript" src="js/ComputerCar.js"></script><!--Javascript File Containing the funciton to create the computers cars-->
+	<style> body { margin: 0; padding: 0; overflow: hidden; background-color: #000000; } </style><!--Styling to make the page look nice-->
 </head>
 <body>
-<div id="MarklarOutput"></div>																			<!-- Div Which Will Hold The Stats Output -->
+<div id="MarklarOutput"></div>																	<!-- Div Which Will Hold The Stats Output -->
 <div style = 'position: absolute; top: 10px; right: 10px;' id="Orientation"><input type="button" class= "m1" value="Enable Tilt Controls" id="marklar" onclick="displayColor()"></div> <!--Div That Holds A Button-->
-<script type="text/javascript">																			<!-- Javascript Code That Runs The Three.js -->
-    var MarklarRenderer = new THREE.WebGLRenderer();													// create a renderer - GLOBAL
-	var ground_material, OrientationOn = false;															//GLOBAL variables required for external files to operate
-	function init() {																					// Once Everything Is Loaded, We Run Our Three.js Stuff
-		MarklarRenderer.setSize( window.innerWidth, window.innerHeight );								// Set The Size Of The Renderer
-		document.getElementById( 'MarklarOutput' ).appendChild( MarklarRenderer.domElement );			// add the output of the renderer to the html element
-		var device = new THREEx.DeviceOrientationState();
-		
-		var ground, vehicle, loader, input;			//NOT MY CODE
-		
-		scene.addEventListener('update', 
-			function() {
-				if ( input && vehicle ) {
-					if ( input.direction !== null ) {
-						input.steering += input.direction / 50;
-						if ( input.steering < -.6 ) input.steering = -.6;
-						if ( input.steering > .6 ) input.steering = .6;
+<script type="text/javascript">																	<!-- Javascript Code That Runs The Three.js -->
+    var ground_material, AI1, AI1input, AI2, AI2input,  vehicle, OrientationOn = false;			//GLOBAL variables required for external files to operate
+	var ground, loader, input, debug = true;
+	var trackL = 300, trackW = 60, quarter = 1.5708, side = 0;
+	var AI1L, AI1R, AI1UP, AI1DOWN;
+	var object = new THREE.Object3D();
+	var parent = new THREE.Object3D();	
+	var AI1UP_pos, AI1L_pos, AI1R_pos, AI1UPUP_pos;
+	var goal = new THREE.Vector3;
+	function init() {																			//Once Everything Is Loaded, We Run Our Three.js Stuff
+		MarklarRenderer.setSize( window.innerWidth, window.innerHeight );						//Set The Size Of The Renderer
+		document.getElementById( 'MarklarOutput' ).appendChild( MarklarRenderer.domElement );	//Add the output of the renderer to the html element
+		cComputerCar();																			//Call the function that creates the computer's first car
+		cComputerCar2();																		//Call the functino that creates the computer's second car
+		scene.addEventListener('update', function() {											//event listener to listen for user input
+				if ( input && vehicle ) {														//if there is input and a vehicle
+					if ( input.direction !== null ) {											//enter if direction is defined 
+						input.steering += input.direction / 50;									//add the steering to the direction
+						if ( input.steering < -.5 ) input.steering = -.5;//0.6					//enter to prevent turning too sharp
+						if ( input.steering > .5 ) input.steering = .5;
 					}
 					vehicle.setSteering( input.steering, 0 );
 					vehicle.setSteering( input.steering, 1 );
-					if ( input.power === true ) {
-						if ( input.forward === true ) {
-							vehicle.applyEngineForce( 300 );
+					if ( input.power === true ) {					//enter if there is power
+						if ( input.forward === true ) {				//enter if forward is true
+							vehicle.applyEngineForce( 300 );		//Apply a force of 300 units
 						}
 						if ( input.forward === false ) {			//Enter If The Car Should Be Moving In Reverse
-							vehicle.applyEngineForce( -300 );		//Apply Reverse Engine Force
+							vehicle.applyEngineForce( -200 );		//Apply Reverse Engine Force
 						}											//End Of Reverse Functionality
 					} else if ( input.power === false ) {
 						vehicle.setBrake( 20, 2 );
@@ -65,7 +57,32 @@
 				scene.simulate( undefined, 2 );
 			}
 		);
-		
+		scene.addEventListener('update', function() {							//event listener to listen for user input
+				if ( AI1input && AI1 ) {										//if there is input and a vehicle
+					if ( AI1input.direction !== null ) {						//enter if direction is defined 
+						AI1input.steering += AI1input.direction / 50;			//add the steering to the direction
+						if ( AI1input.steering < -.5 ) AI1input.steering = -.5;	//enter to prevent turning too sharp
+						if ( AI1input.steering > .5 ) AI1input.steering = .5;
+					}
+					AI1.setSteering( AI1input.steering, 0 );
+					AI1.setSteering( AI1input.steering, 1 );
+					if ( AI1input.power === true ) {							//enter if there is power
+						if ( AI1input.forward === true ) {						//enter if forward is true
+							AI1.applyEngineForce( 300 );						//Apply a force of 300 units
+						}
+						if ( AI1input.forward === false ) {						//Enter If The Car Should Be Moving In Reverse
+							AI1.applyEngineForce( -200 );						//Apply Reverse Engine Force
+						}														//End Of Reverse Functionality
+					} else if ( AI1input.power === false ) {
+						AI1.setBrake( 20, 2 );
+						AI1.setBrake( 20, 3 );
+					} else {
+						AI1.applyEngineForce( 0 );
+					}
+				}
+				scene.simulate( undefined, 2 );
+			}
+		);
 		//Add Objects To The Scene
 		scene.add(a);
 		scene.add(b);
@@ -75,160 +92,233 @@
 		// Loader
 		loader = new THREE.TextureLoader();
 		// Materials
-		ground_material = Physijs.createMaterial(new THREE.MeshLambertMaterial({ map: loader.load( 'images/track.jpg' ) }), .8, // high friction
-			.05 // low restitution
-		);
+		ground_material = Physijs.createMaterial(new THREE.MeshLambertMaterial({ map: loader.load( 'images/track.jpg' ) }), .6, 1.55);
 		ground_material.map.wrapS = ground_material.map.wrapT = THREE.RepeatWrapping;
 		ground_material.map.repeat.set( 3, 3 );
 		
-		//Make the Track
-		function createMesh(geom) {
-
-            // assign two materials
-            var meshMaterial = new THREE.MeshNormalMaterial();
-            meshMaterial.side = THREE.DoubleSide;
-            var wireFrameMat = new THREE.MeshBasicMaterial();
-            wireFrameMat.wireframe = true;
-
-            // create a multimaterial
-            var mesh = THREE.SceneUtils.createMultiMaterialObject(geom, [meshMaterial, wireFrameMat]);
-
-            return mesh;
-        }
-
 		/* - Make & Add The Track - */
-		track(60,300,100,100, 0, 0, 0);
-		track(60,300,100,100, -175, 0, 0);
-		track(60,5,100,100,-0.5,0,151);
-		track(60,5,100,100,-1,0,152);
-		track(60,5,100,100,-1.5,0,153);
-		track(60,5,100,100,-2,0,154);
-		track(60,5,100,100,-2.5,0,155);
-		track(60,5,100,100,-3,0,156);
-		track(60,5,100,100,-3.5,0,157);
-		track(60,5,100,100,-4,0,158);
-		track(60,5,100,100,-4.5,0,159);
-		track(60,5,100,100,-5,0,160);
-		track(60,5,100,100,-5.5,0,161);
-		track(60,5,100,100,-6,0,162);
-		track(60,5,100,100,-6.5,0,163);
-		track(60,5,100,100,-7,0,164);
-		track(60,5,100,100,-7.5,0,165);
-		track(60,5,100,100,-8,0,166);
-		track(60,5,100,100,-8.5,0,167);
-		track(60,5,100,100,-9,0,168);
-		track(60,5,100,100,-9.5,0,169);
-		track(60,5,100,100,-10,0,170);
-		track(60,5,100,100,-10.5,0,171);
-		track(60,5,100,100,-11,0,172);
-		track(60,5,100,100,-11.5,0,173);
-		track(60,5,100,100,-12,0,174);
+		track(trackW,trackL, 0, 0, 0, 0);
+		track(trackW,trackL, -300, 0, 0, 0);
+		track(trackW,(trackL-trackW), -150, 0, 120, quarter);
+		track(trackW,(trackL-trackW), -150, 0, -120, quarter);
 		/* - End Of The Track Creation - */
-
-		var json_loader = new THREE.JSONLoader();													//NOT MY CODE
-		json_loader.load( "models/mustang.js", function( car, car_materials ) {						//NOT MY CODE
-			json_loader.load( "models/wheel.js", function( wheel, wheel_materials ) {		//NOT MY CODE
-				var mesh = new Physijs.BoxMesh(														//NOT MY CODE
-					car,																			//NOT MY CODE
-					new THREE.MeshFaceMaterial( car_materials )										//NOT MY CODE
-				);																					//NOT MY CODE
-				mesh.position.y = 2;																//NOT MY CODE
-				mesh.castShadow = mesh.receiveShadow = true;										//NOT MY CODE
-				vehicle = new Physijs.Vehicle(mesh, new Physijs.VehicleTuning(10.88, 1.83, 0.28, 500, 10.5, 6000));					//NOT MY CODE
-				scene.add( vehicle );																//NOT MY CODE
-				var wheel_material = new THREE.MeshFaceMaterial( wheel_materials );					//NOT MY CODE
-				for ( var i = 0; i < 4; i++ ) {														//NOT MY CODE
-					vehicle.addWheel(wheel, wheel_material, new THREE.Vector3(i % 2 === 0 ? -1.6 : 1.6, -1, i < 2 ? 3.3 : -3.2),	//NOT MY CODE
-						new THREE.Vector3( 0, -1, 0 ),												//NOT MY CODE
-						new THREE.Vector3( -1, 0, 0 ),												//NOT MY CODE
-						0.5,																		//NOT MY CODE
-						0.7,																		//NOT MY CODE
-						i < 2 ? false : true														//NOT MY CODE
-					);																				//NOT MY CODE
-				}																					//NOT MY CODE
-				input = {																			//NOT MY CODE
-					power: null,																	//NOT MY CODE
-					direction: null,																//NOT MY CODE
-					steering: 0																		//NOT MY CODE
-				};																					//NOT MY CODE
+		createCar();
+		function createCar(){
+		
+		var json_loader = new THREE.JSONLoader();												
+		json_loader.load( "models/mustang.js", function( car, car_materials ) {					
+			json_loader.load( "models/wheel.js", function( wheel, wheel_materials ) {		
+				var mesh = new Physijs.BoxMesh(	car, new THREE.MeshFaceMaterial( car_materials ) );	//create the mesh that is the car
+				mesh.position.y = 2.5;																//set the hight where the car renders
+				vehicle = new Physijs.Vehicle(mesh, new Physijs.VehicleTuning(10.88, 1.83, 15, 500, 10.5, 6000));	
+				scene.add( vehicle );																
+				var wheel_material = new THREE.MeshFaceMaterial( wheel_materials );					
+				for ( var i = 0; i < 4; i++ ) {														//For loop to add all four wheels to the car											
+					vehicle.addWheel(wheel, wheel_material, new THREE.Vector3(i % 2 == 0 ? -1.6 : 1.6, -1, i < 2 ? 3.3 : -3.2), new THREE.Vector3( 0, -1, 0 ), new THREE.Vector3( -1, 0, 0 ), 0.5,	0.7, i < 2 ? false : true);																				//NOT MY CODE
+				}
+				input = { power: null, direction: null,	steering: 0	};								//create the input variables
 				document.addEventListener('keydown', function( ev ) {								//NOT MY CODE
 					switch ( ev.keyCode ) {															//NOT MY CODE
 						case 37: // left															//NOT MY CODE
 							input.direction = 1;													//NOT MY CODE
 							break;																	//NOT MY CODE
 						case 38: // forward															//NOT MY CODE
-							input.forward = true;								//Added to add the ability to drive in reverse
+							input.forward = true;													//Added to add the ability to drive in reverse
 							input.power = true;														//NOT MY CODE	
 							break;																	//NOT MY CODE
 						case 39: // right															//NOT MY CODE
 							input.direction = -1;													//NOT MY CODE
 							break;																	//NOT MY CODE
 						case 40: // back															//NOT MY CODE
-							input.forward = false;								//Added to add the ability to drive in reverse
-							input.power = true;									//Added to add the ability to drive in reverse 
+							input.forward = false;													//Added to add the ability to drive in reverse
+							input.power = true;														//Added to add the ability to drive in reverse 
 							break;																	//NOT MY CODE
-					}																				//NOT MY CODE
-				});																					//NOT MY CODE
+					}																				
+				});
 				document.addEventListener('deviceorientation',  callback, false);
-				console.log('Angle Y is:' + device.angleY());
-				console.log('Angle X is:' + device.angleX());
-				console.log('Angle Z is:' + device.angleZ());
-				
-				
-				
-				document.addEventListener('keyup', function( ev ) {									//NOT MY CODE
+				document.addEventListener('keyup', function( ev ) {									//listener to catch when the keys are let go
 					switch ( ev.keyCode ) {															//NOT MY CODE
 						case 37: // left															//NOT MY CODE
-							input.direction = null;													//NOT MY CODE
+							input.direction = 0;													//Set value to Zero to decrease the steering
 							break;																	//NOT MY CODE
 						case 38: // forward															//NOT MY CODE
-							input.power = null;														//NOT MY CODE
+							input.power = false;													//Set the value to false to slow down the car
 							break;																	//NOT MY CODE
 						case 39: // right															//NOT MY CODE
-							input.direction = null;													//NOT MY CODE
+							input.direction = 0;													//Set the value to zero to decrease the steering
 							break;																	//NOT MY CODE
 						case 40: // back															//NOT MY CODE
-							input.power = null;														//NOT MY CODE
+							input.power = false;													//Set the value to false to slow down the car
 							break;																	//NOT MY CODE
-					}																				//NOT MY CODE
-				});																					//NOT MY CODE
-			});																						//NOT MY CODE
-		});																							//NOT MY CODE
-		requestAnimationFrame( render );															//NOT MY CODE
-		scene.simulate();																			//NOT MY CODE
+					}																				
+				});																					
+			});																						
+		});																							
+		}
+		requestAnimationFrame( render );														
+		scene.simulate();																			//Call to the Physics Engine
 		function callback(event){
 			console.log("orientation gamma:", event.gamma, "beta", event.beta, "alpha", event.alpha);
 		}
 		
-		//REMOVE BEFORE SUBMISSION
-		var render_stats = new Stats();render_stats.domElement.style.position = 'absolute';render_stats.domElement.style.top = '1px';render_stats.domElement.style.zIndex = 100;document.getElementById( 'MarklarOutput' ).appendChild( render_stats.domElement );
-		//REMOVE BEFORE SUBMISSION
-		
-		function render() {																			
-			requestAnimationFrame( render );														//NOT MY CODE
-			if(OrientationOn){
-				if(device.angleY() < 0){
-					input.direction = 1;
-				}if(device.angleY() > 0){
-					input.direction = -1;
-				}if(device.angleZ() < 0){
-					input.forward = true;
-					input.power = true;
-				}if(device.angleZ() > 0){
-					input.forward = false;
-					input.power = true;
+		if(debug)var render_stats = new Stats();render_stats.domElement.style.position = 'absolute';render_stats.domElement.style.top = '1px';render_stats.domElement.style.zIndex = 100;document.getElementById( 'MarklarOutput' ).appendChild( render_stats.domElement );
+		function render() {	
+			try{
+				AI1UP_pos = AI1UP.matrixWorld.multiplyVector3(new THREE.Vector3);
+				AI1UPUP_pos = AI1UPUP.matrixWorld.multiplyVector3(new THREE.Vector3);
+				AI1L_pos = AI1L.matrixWorld.multiplyVector3(new THREE.Vector3);
+				AI1R_pos = AI1R.matrixWorld.multiplyVector3(new THREE.Vector3);
+				///console.log( "( AI1UP: ", AI1UP_pos, ")" );
+				//console.log( "( Goal: ", goal, " )" ); 
+				//logic to make AI1 navigate the track
+				switch(side){
+					case 0:
+						goal.x = -10;
+						goal.y = 0;
+						goal.z = 120;
+						if(AI1R_pos.z>(goal.z-5)){
+							side = 1;
+						}
+						if(AI1UP_pos.z<goal.z){
+							AI1input.power = true;
+							AI1input.forward = true;
+						}else{
+							AI1input.power = true;
+							AI1input.forward = false;
+						}if(AI1UP_pos.x==goal.x){
+							AI1input.steering = 0;
+						}else if(AI1UP_pos.x<goal.x){
+							AI1input.steering = .051;
+						}else{
+							AI1input.steering = (-.051);
+						}
+						break;
+					case 1:
+						goal.x = (-300);
+						goal.y = 0;
+						goal.z = 110;
+						if(AI1R_pos.x<(goal.x+35)){
+							side = 2;
+						}
+						if(AI1UP_pos.x>goal.x){
+							AI1input.power = true;
+							AI1input.forward = true;
+						}else{
+							AI1input.power = true;
+							AI1input.forward = false;
+						}
+						if(AI1.mesh.position.x>(-30)){
+							goal.z = 130;
+							if(AI1UP_pos.z==goal.z){
+								AI1input.steering = 0;
+							}else if(AI1UP_pos.z<goal.z){
+								AI1input.steering = .51;//R-/L+
+							}else{
+								AI1input.steering = (-.51);
+							}
+						}else if(AI1.mesh.position.x>(-65)){
+							goal.z = 120;
+							if(AI1UPUP_pos.z==goal.z){
+								AI1input.steering = 0;
+							}else if(AI1UPUP_pos.z<goal.z){
+								AI1input.steering = .25;//R-/L+
+							}else{
+								AI1input.steering = (-.25);
+							}
+						}else{
+							goal.z = 100;
+							if(AI1UPUP_pos.z==goal.z){
+								AI1input.steering = 0;
+							}else if(AI1UPUP_pos.z<goal.z){
+								AI1input.steering = .05;//R-/L+
+							}else{
+								AI1input.steering = (-.05);
+							}
+						}
+						break;
+					case 2:
+						goal.x = (-300);
+						goal.y = 0;
+						goal.z = 90;
+						AI1input.power = true;
+						AI1input.forward = true;
+						if(AI1.mesh.position.z>89 && AI1.mesh.position.x>(-300)){
+							AI1input.steering = (-0.40);
+						}
+						if(AI1.mesh.position.z<85){
+							side = 3;
+						}
+						break;
+					case 3:
+						goal.x = (-300);
+						goal.y = 0;
+						goal.z = (-120);
+						if(AI1R_pos.z<(goal.z+35)){
+							side = 3;
+							//console.log("Exiting Side 2");
+						}
+						if(AI1UP_pos.z>goal.z){
+							AI1input.power = true;
+							AI1input.forward = true;
+						}else{
+							//console.log("BACK");
+							AI1input.power = true;
+							AI1input.forward = false;
+						}
+						//console.log("Case 3");
+						if(AI1.mesh.position.z>(80)){
+							//console.log("Greater Than 80");
+							goal.x = (-280);
+							if(AI1UP_pos.x==goal.x){
+								AI1input.steering = 0;
+							}else if(AI1UP_pos.x<goal.x){
+								AI1input.steering = .51;//R-/L+
+								//consol.log("Left");
+							}else{
+								AI1input.steering = (-.51);
+							}
+						}else if(AI1.mesh.position.z>(50)){
+							//console.log("Greater Than 50");
+							if(AI1UPUP_pos.x==goal.x){
+								AI1input.steering = 0;
+							}else if(AI1UPUP_pos.x<goal.x){
+								AI1input.steering = .25;//R-/L+
+								//console.log("Left");
+							}else{
+								AI1input.steering = (-.25);
+								//console.log("Right");
+							}
+						}else{
+							if(AI1UPUP_pos.x==goal.x){
+								AI1input.steering = 0;
+							}else if(AI1UPUP_pos.z<goal.z){
+								AI1input.steering = .05;//R-/L+
+							}else{
+								AI1input.steering = (-.05);
+							}
+						}
 				}
+				
+			}catch(err){
+				//console.log("Error In The Switch Statement For AI1 Navigating The Track");
 			}
-			if ( vehicle ) {																		//NOT MY CODE
-				c.position.copy(vehicle.mesh.position).add( new THREE.Vector3(40,25,40));			//NOT MY CODE
-				c.lookAt( vehicle.mesh.position );													//NOT MY CODE
-			}																						//NOT MY CODE
-			MarklarRenderer.render( scene, c );														//NOT MY CODE
-			//Remove before subission
-			render_stats.update();																	//NOT MY CODE
+			requestAnimationFrame( render );
+			//AI2.applyEngineForce( -30);
+			//AI1input.steering = (-1);
+			if (OrientationOn) move();																//call the orientation sensing code
+			if ( vehicle ) {																		//Enter if the vehicle exists
+				c.position.copy(vehicle.mesh.position).add( new THREE.Vector3(40,25,40));			//Make the camera look at the car
+				c.lookAt( vehicle.mesh.position );													//Make the camera look at the car
+			}
+			/*if ( AI1 ) {																			//Enter if the vehicle exists
+				c.position.copy(AI1.mesh.position).add( new THREE.Vector3(40,25,40));				//Make the camera look at the car
+				c.lookAt( AI1.mesh.position );														//Make the camera look at the car
+			}*/
+			MarklarRenderer.render( scene, c );														//Call the Renderer
+			if(debug)render_stats.update();															//Update the stats
 		}
 	}
-	window.onload = init;																		//Call The Main Function Once The Page Is Loaded 
+	window.onload = init;																			//Call The Main Function Once The Page Is Loaded 
 </script>
 </body>	
 </html>
